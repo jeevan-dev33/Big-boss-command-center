@@ -1,0 +1,1234 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Big Boss Command Center - Tech House</title>
+<style>
+:root{
+  --bg:#0b0d14; --panel:#141824; --panel2:#1b2132; --line:#262d42;
+  --text:#e8ebf5; --muted:#8a93ad; --accent:#7c5cff; --accent2:#00d4ff;
+  --good:#23c97a; --warn:#ffb020; --bad:#ff4d5e;
+}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(1200px 600px at 80% -10%,#1b1550 0%,transparent 60%),var(--bg);
+  color:var(--text);font-family:Inter,system-ui,Segoe UI,Roboto,sans-serif;min-height:100vh}
+h1{font-size:18px;letter-spacing:.18em;margin:0}
+h2{font-size:15px;margin:0 0 12px;letter-spacing:.06em;text-transform:uppercase;color:#cfd5ec}
+h3.sub{font-size:12px;margin:18px 0 6px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em}
+p{margin:0}
+.muted{color:var(--muted);font-size:12px}
+.hidden{display:none!important}
+
+.topbar{display:flex;justify-content:space-between;align-items:center;padding:14px 24px;
+  border-bottom:1px solid var(--line);background:rgba(11,13,20,.8);backdrop-filter:blur(8px);position:sticky;top:0;z-index:20}
+.brand{display:flex;gap:12px;align-items:center}
+.brand p{color:var(--muted);font-size:12px}
+.eye{font-size:28px;filter:drop-shadow(0 0 8px var(--accent))}
+.topbar-right{display:flex;gap:14px;align-items:center}
+.live{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--bad)}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--bad);animation:pulse 1.2s infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(1.4)}}
+
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;padding:20px 24px 60px;max-width:1500px;margin:auto}
+.span-2{grid-column:span 2}.span-3{grid-column:span 3}
+@media(max-width:1000px){.grid{grid-template-columns:1fr}.span-2,.span-3{grid-column:auto}}
+
+.card{background:linear-gradient(180deg,var(--panel),#10131d);border:1px solid var(--line);border-radius:14px;padding:16px}
+.card.danger{border-color:#5a2230;background:linear-gradient(180deg,#2a1219,#150b10)}
+.card-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+.card-head h2{margin:0}
+
+input,select{background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:8px 10px;font:inherit;font-size:13px}
+input:focus,select:focus{outline:2px solid var(--accent);outline-offset:0}
+label{display:block;font-size:12px;color:var(--muted)}
+label select,label input{display:block;width:100%;margin-top:4px}
+
+.btn{background:var(--accent);color:#fff;border:0;border-radius:8px;padding:9px 14px;font:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:.15s}
+.btn:hover{filter:brightness(1.15);transform:translateY(-1px)}
+.btn.small{padding:6px 10px;font-size:12px}
+.btn.good{background:var(--good);color:#04210f}
+.btn.warn{background:var(--warn);color:#2b1c00}
+.btn.bad{background:var(--bad)}
+.btn.ghost{background:transparent;border:1px solid var(--line);color:var(--text)}
+.btn:disabled{opacity:.35;cursor:not-allowed;transform:none}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.inline-form,.task-form,.announce-form{display:flex;gap:8px;flex-wrap:wrap}
+.task-form input[type=text],.task-form #task-title,.announce-form input{flex:1;min-width:180px}
+.task-form #task-points{width:90px}
+
+/* stats */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+.stat{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px}
+.stat .k{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.stat .v{font-size:20px;font-weight:800;margin-top:4px}
+.stat .v small{font-size:12px;color:var(--muted);font-weight:500}
+
+/* leaderboard */
+.leaderboard{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;position:relative}
+.leaderboard li{display:flex;align-items:center;gap:10px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px 10px;animation:slide .35s ease}
+@keyframes slide{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.rank{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:800;background:#2a3250}
+.leaderboard li:nth-child(1) .rank{background:#ffd34d;color:#3a2a00}
+.leaderboard li:nth-child(2) .rank{background:#cfd6e6;color:#222}
+.leaderboard li:nth-child(3) .rank{background:#d8935a;color:#2b1500}
+.lb-name{flex:1;font-weight:600}
+.lb-team{font-size:11px;color:var(--muted)}
+.lb-pts{font-weight:800;font-variant-numeric:tabular-nums}
+.evicted-list{list-style:none;margin:0;padding:0;font-size:13px;color:var(--muted)}
+.evicted-list li{padding:4px 0;text-decoration:line-through}
+
+/* table */
+.table-wrap{overflow:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);padding:6px 8px;border-bottom:1px solid var(--line)}
+td{padding:8px;border-bottom:1px solid #1d2335;vertical-align:middle}
+tr.is-evicted td{opacity:.4}
+.name-cell{font-weight:700;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.tag{font-size:10px;font-weight:800;padding:2px 7px;border-radius:99px;letter-spacing:.05em}
+.tag.captain{background:#ffd34d;color:#3a2a00}
+.tag.immune{background:var(--good);color:#04210f}
+.tag.nominated{background:var(--bad);color:#fff}
+.tag.active{background:#233a5e;color:#9cc7ff}
+.tag.evicted{background:#444;color:#ddd}
+.team-pill{padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700}
+.team-Alpha{background:#3a2a7a}.team-Beta{background:#0f4d5c}.team-Gamma{background:#5c2a45}.team-Delta{background:#4a4a14}
+.pt-btns{display:flex;gap:4px;flex-wrap:wrap}
+.pt-btns button{background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:6px;padding:4px 7px;font-size:11px;font-weight:700;cursor:pointer}
+.pt-btns .plus:hover{background:var(--good);color:#04210f}
+.pt-btns .minus:hover{background:var(--bad)}
+.point-custom{margin-top:10px;font-size:12px;color:var(--muted);display:flex;gap:8px;align-items:center}
+.point-custom input{width:80px}
+.ctl-btns{display:flex;gap:4px;flex-wrap:wrap}
+.ctl-btns button{background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:6px;padding:4px 7px;font-size:11px;cursor:pointer}
+.ctl-btns button:hover{border-color:var(--accent)}
+.ctl-btns .evict:hover{background:var(--bad);border-color:var(--bad)}
+
+/* danger */
+.danger-list{list-style:none;margin:12px 0;padding:0;display:flex;flex-direction:column;gap:8px;min-height:60px}
+.danger-list li{display:flex;justify-content:space-between;align-items:center;background:#3a1620;border:1px solid #7a2a3c;border-radius:10px;padding:10px 12px;animation:shake .5s}
+@keyframes shake{0%,100%{transform:none}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.danger-list .empty{background:transparent;border:1px dashed #5a2230;color:var(--muted);justify-content:center;animation:none}
+.danger-name{font-weight:800}
+.btn.evict-btn{background:var(--bad)}
+
+/* house */
+.house-status{display:grid;gap:6px;margin-bottom:12px;font-size:13px}
+.house-status div{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.msg{font-size:12px;min-height:18px;color:var(--warn)}
+
+/* tasks */
+.task-list{list-style:none;margin:12px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}
+.task{display:flex;align-items:center;gap:10px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.task.done{opacity:.55}
+.task.done .t-title{text-decoration:line-through}
+.t-main{flex:1}
+.t-title{font-weight:600}
+.t-meta{font-size:12px;color:var(--muted);margin-top:2px}
+.t-del{background:transparent;border:0;color:var(--muted);cursor:pointer;font-size:16px}
+.t-del:hover{color:var(--bad)}
+
+/* timer */
+.timer-display{font-size:56px;font-weight:800;text-align:center;font-variant-numeric:tabular-nums;letter-spacing:.04em;margin:6px 0}
+.timer-display.low{color:var(--warn)}
+.timer-display.zero{color:var(--bad);animation:pulse 0.8s infinite}
+.timer-bar{height:8px;background:var(--panel2);border-radius:99px;overflow:hidden;margin-bottom:12px}
+#timer-fill{height:100%;width:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .25s linear}
+.timer-set{display:flex;gap:8px;align-items:flex-end;margin-bottom:10px}
+.timer-set label{flex:1}
+
+/* announcements */
+.quick{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:10px 0}
+.chip{background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:99px;padding:5px 10px;font-size:11px;cursor:pointer}
+.chip:hover{border-color:var(--accent2)}
+.announce-log{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:6px;max-height:200px;overflow:auto}
+.announce-log li{background:var(--panel2);border-left:3px solid var(--accent);padding:8px 10px;border-radius:6px;font-size:13px}
+.announce-log time{display:block;font-size:11px;color:var(--muted)}
+
+.announce-banner{position:fixed;top:0;left:0;right:0;z-index:50;display:flex;gap:14px;align-items:center;padding:18px 24px;
+  background:linear-gradient(90deg,#3b1d9e,#7c1fa8);box-shadow:0 8px 40px rgba(124,92,255,.5);animation:drop .5s ease}
+@keyframes drop{from{transform:translateY(-100%)}to{transform:none}}
+.ab-label{font-size:11px;letter-spacing:.25em;font-weight:800;opacity:.8}
+#announce-text{font-size:20px;font-weight:700}
+.announce-banner div:nth-child(2){flex:1}
+#announce-dismiss{background:rgba(255,255,255,.15);border:0;color:#fff;width:32px;height:32px;border-radius:50%;cursor:pointer}
+
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#000;border:1px solid var(--accent);padding:10px 16px;border-radius:10px;font-size:13px;z-index:60}
+
+
+/* ===== Animated background themes ===== */
+body{background:var(--bg)}
+body[data-bg=plain]{background:radial-gradient(1200px 600px at 80% -10%,#1b1550 0%,transparent 60%),var(--bg)}
+#bg-layer{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+#bg-canvas{position:absolute;inset:0;width:100%;height:100%;opacity:0;transition:opacity .8s}
+.bg-aurora,.bg-grid,.bg-sunset{position:absolute;inset:0;opacity:0;transition:opacity .9s}
+.bg-vignette{position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 45%,rgba(5,6,10,.6) 100%)}
+body[data-bg=aurora] .bg-aurora,body[data-bg=grid] .bg-grid,body[data-bg=sunset] .bg-sunset{opacity:1}
+body[data-bg=aurora] #bg-canvas{opacity:.8}
+body[data-bg=stars] #bg-canvas{opacity:1}
+body[data-bg=matrix] #bg-canvas{opacity:.5}
+
+/* aurora blobs */
+.bg-aurora i{position:absolute;border-radius:50%;filter:blur(90px);opacity:.55;animation:drift 22s ease-in-out infinite alternate}
+.bg-aurora i:nth-child(1){width:55vw;height:55vw;left:-10vw;top:-15vw;background:#6d3bff}
+.bg-aurora i:nth-child(2){width:45vw;height:45vw;right:-8vw;top:10vh;background:#00c2ff;animation-duration:28s;animation-delay:-6s}
+.bg-aurora i:nth-child(3){width:50vw;height:50vw;left:25vw;bottom:-25vw;background:#ff3d8b;animation-duration:32s;animation-delay:-12s}
+@keyframes drift{0%{transform:translate(0,0) scale(1)}50%{transform:translate(8vw,6vh) scale(1.15)}100%{transform:translate(-6vw,12vh) scale(.95)}}
+
+/* neon retro grid */
+.bg-grid{background:radial-gradient(ellipse at 50% 62%,rgba(255,61,139,.4),transparent 60%),linear-gradient(#0b0d14 0%,#150a35 55%,#2a0f4a 100%)}
+.bg-grid::before{content:"";position:absolute;z-index:1;left:-50%;right:-50%;bottom:0;height:62%;
+  background-color:rgba(18,10,46,.85);
+  background-image:linear-gradient(rgba(0,212,255,.6) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,.6) 1px,transparent 1px);
+  background-size:60px 60px;transform:perspective(500px) rotateX(62deg);transform-origin:50% 100%;
+  animation:gridmove 2.4s linear infinite;-webkit-mask-image:linear-gradient(transparent,#000 70%);mask-image:linear-gradient(transparent,#000 70%)}
+.bg-grid::after{content:"";position:absolute;z-index:0;left:50%;bottom:34%;width:min(36vw,400px);aspect-ratio:1;transform:translateX(-50%);
+  border-radius:50%;background:linear-gradient(#ffd34d,#ff3d8b);opacity:.6;box-shadow:0 0 90px 30px rgba(255,61,139,.35)}
+@keyframes gridmove{from{background-position:0 0,0 0}to{background-position:0 60px,0 0}}
+
+/* sunset */
+.bg-sunset{background:linear-gradient(180deg,#1a0b3b 0%,#5b1b7a 35%,#c2386f 62%,#ff8a4c 82%,#ffd36b 100%);background-size:100% 170%;animation:skyshift 26s ease-in-out infinite alternate}
+.bg-sunset::before{content:"";position:absolute;left:50%;bottom:24vh;width:22vmin;height:22vmin;transform:translateX(-50%);border-radius:50%;
+  background:radial-gradient(#fff3b0,#ffb347 60%,transparent 72%);box-shadow:0 0 120px 60px rgba(255,150,80,.45);animation:sunbob 12s ease-in-out infinite alternate}
+.bg-sunset::after{content:"";position:absolute;left:-10%;right:-10%;bottom:-8vh;height:32vh;
+  background:radial-gradient(ellipse 50% 100% at 25% 100%,#0e0720 98%,transparent 100%),radial-gradient(ellipse 60% 90% at 75% 100%,#170b2e 98%,transparent 100%)}
+@keyframes skyshift{to{background-position:0 100%}}
+@keyframes sunbob{to{bottom:30vh}}
+
+/* glass cards so the background shows through */
+.grid{position:relative;z-index:1}
+.card{background:linear-gradient(180deg,rgba(20,24,36,.78),rgba(16,19,29,.7));backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.card.danger{background:linear-gradient(180deg,rgba(42,18,25,.82),rgba(21,11,16,.74))}
+
+/* theme picker */
+.bg-pick{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--text)}
+.bg-pick select{width:auto;margin:0;padding:6px 8px;font-size:12px}
+
+@media (prefers-reduced-motion:reduce){
+  .bg-aurora i,.bg-grid::before,.bg-sunset,.bg-sunset::before{animation:none}
+}
+
+/* ===== Role access, notifications, activity log, analytics ===== */
+.badge{background:var(--bad);color:#fff;border-radius:99px;font-size:10px;padding:1px 6px;margin-left:5px}
+.notif-panel{position:fixed;top:66px;right:20px;width:min(380px,92vw);max-height:72vh;overflow:auto;z-index:40;background:#10131d;border:1px solid var(--line);border-radius:14px;padding:14px;box-shadow:0 14px 44px rgba(0,0,0,.65)}
+.log-list{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}
+.log-list.tall{max-height:340px;overflow:auto}
+.lg{--c:var(--accent);display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline;background:var(--panel2);border-left:3px solid var(--c);border-radius:6px;padding:7px 10px;font-size:13px}
+.lg.unread{background:#232a44;font-weight:600}
+.lg-points{--c:var(--accent2)}.lg-task{--c:var(--good)}.lg-announce{--c:#c77dff}.lg-timer{--c:var(--warn)}.lg-security{--c:var(--bad)}
+.lg-type{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--c)}
+.lg-msg{flex:1;min-width:160px}.lg time{font-size:11px;color:var(--muted)}
+.log-tools{display:flex;gap:6px;align-items:center}.log-tools select{padding:5px 8px;font-size:12px}
+.nset{display:flex;flex-wrap:wrap;gap:6px 14px}
+label.chk{display:inline-flex;align-items:center;gap:6px;color:var(--text)}
+label.chk input{display:inline;width:auto;margin:0}
+.perm-list{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:6px;font-size:13px}
+.perm-list .ok{color:var(--good)}.perm-list .no{color:var(--muted);text-decoration:line-through}
+.an-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px;margin-top:6px}
+.bar-row{display:flex;align-items:center;gap:8px;font-size:12px;margin:5px 0}
+.bar-row span{width:64px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar{flex:1;height:10px;background:var(--panel2);border-radius:99px;overflow:hidden}
+.bar i{display:block;height:100%;border-radius:99px;transition:width .4s}
+.bar i.team-Alpha{background:#7c5cff}.bar i.team-Beta{background:#00d4ff}.bar i.team-Gamma{background:#ff4d9a}.bar i.team-Delta{background:#e0c341}
+.tavg{margin:-3px 0 4px 72px}
+.donut{width:96px;height:96px;border-radius:50%;background:conic-gradient(var(--good) calc(var(--p)*1%),var(--panel2) 0);display:grid;place-items:center}
+.donut b{background:#141824;width:70px;height:70px;border-radius:50%;display:grid;place-items:center}
+.spark{width:100%;height:80px;display:block}
+</style>
+</head>
+<body>
+<div id="bg-layer" aria-hidden="true">
+  <div class="bg-aurora"><i></i><i></i><i></i></div>
+  <div class="bg-grid"></div>
+  <div class="bg-sunset"></div>
+  <canvas id="bg-canvas"></canvas>
+  <div class="bg-vignette"></div>
+</div>
+
+
+<div id="announce-banner" class="announce-banner hidden" role="alert">
+  <span class="eye">👁</span>
+  <div>
+    <div class="ab-label">BIG BOSS ANNOUNCEMENT</div>
+    <div id="announce-text"></div>
+  </div>
+  <button id="announce-dismiss" title="Dismiss">✕</button>
+</div>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="eye">👁</span>
+    <div>
+      <h1>BIG BOSS · COMMAND CENTER</h1>
+      <p>The Tech House — live control room</p>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <div class="live"><span class="dot"></span> LIVE</div>
+    <label class="bg-pick" title="Active role (Role-Based Access)">🔑 <select id="role-select"></select></label>
+    <button id="bell" class="btn ghost small" title="Event notifications">🔔<span id="bell-badge" class="badge hidden">0</span></button>
+    <label class="bg-pick" title="Background theme">🎨
+        <select id="bg-theme">
+          <option value="aurora">Aurora</option>
+          <option value="grid">Neon Grid</option>
+          <option value="stars">Starfield</option>
+          <option value="matrix">Matrix Rain</option>
+          <option value="sunset">Sunset</option>
+          <option value="auto">Auto-cycle</option>
+          <option value="plain">Plain</option>
+        </select>
+      </label>
+      <button id="reset-house" class="btn ghost small">Reset House</button>
+  </div>
+</header>
+
+<main class="grid">
+
+  <!-- Statistics -->
+  <section class="card span-3" id="stats-card">
+    <h2>House Statistics</h2>
+    <div class="stats" id="stats"></div>
+  </section>
+
+  <!-- Leaderboard -->
+  <section class="card" id="leaderboard-card">
+    <h2>Live Leaderboard</h2>
+    <ol id="leaderboard" class="leaderboard"></ol>
+    <h3 class="sub">Evicted</h3>
+    <ul id="evicted-list" class="evicted-list"></ul>
+  </section>
+
+  <!-- Contestants -->
+  <section class="card span-2" id="contestants-card">
+    <div class="card-head">
+      <h2>Contestant Management</h2>
+      <form id="add-contestant" class="inline-form">
+        <input id="new-name" placeholder="Name" required maxlength="24">
+        <select id="new-team"></select>
+        <button class="btn small" type="submit">+ Add</button>
+      </form>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Contestant</th><th>Team</th><th>Points</th><th>Status</th><th>Adjust points</th><th>House controls</th></tr>
+        </thead>
+        <tbody id="contestant-rows"></tbody>
+      </table>
+    </div>
+    <div class="point-custom">
+      Custom amount:
+      <input id="custom-points" type="number" min="1" value="25">
+      <span class="muted">used by the ±Custom buttons on each row</span>
+    </div>
+  </section>
+
+  <!-- Danger Zone -->
+  <section class="card danger" id="danger-card">
+    <h2>⚠ Danger Zone</h2>
+    <p class="muted">Nominated contestants. Big Boss decides who leaves.</p>
+    <ul id="danger-list" class="danger-list"></ul>
+    <div class="danger-actions">
+      <button id="clear-noms" class="btn ghost small">Clear all nominations</button>
+    </div>
+  </section>
+
+  <!-- Nominations & captaincy -->
+  <section class="card" id="house-card">
+    <h2>Captaincy · Nominations · Immunity</h2>
+    <div class="house-status" id="house-status"></div>
+    <label>Contestant
+      <select id="house-target"></select>
+    </label>
+    <div class="btn-row">
+      <button class="btn" id="btn-captain">👑 Make Captain</button>
+      <button class="btn warn" id="btn-nominate">🎯 Nominate</button>
+      <button class="btn good" id="btn-immunity">🛡 Grant Immunity</button>
+    </div>
+    <div class="btn-row">
+      <button class="btn ghost small" id="btn-remove-captain">Remove captain</button>
+      <button class="btn ghost small" id="btn-remove-nom">Withdraw nomination</button>
+      <button class="btn ghost small" id="btn-remove-immunity">Revoke immunity</button>
+    </div>
+    <div id="house-msg" class="msg"></div>
+  </section>
+
+  <!-- Tasks -->
+  <section class="card span-2" id="tasks-card">
+    <h2>Task Management</h2>
+    <form id="add-task" class="task-form">
+      <input id="task-title" placeholder="Task, e.g. Fix the production bug in 20 min" required maxlength="120">
+      <select id="task-assignee"></select>
+      <input id="task-points" type="number" value="50" min="0" title="Reward points">
+      <button class="btn" type="submit">Assign Task</button>
+    </form>
+    <ul id="task-list" class="task-list"></ul>
+  </section>
+
+  <!-- Timer -->
+  <section class="card" id="timer-card">
+    <h2>Task Timer</h2>
+    <div class="timer-display" id="timer-display">05:00</div>
+    <div class="timer-bar"><div id="timer-fill"></div></div>
+    <div class="timer-set">
+      <label>Min <input id="timer-min" type="number" min="0" max="180" value="5"></label>
+      <label>Sec <input id="timer-sec" type="number" min="0" max="59" value="0"></label>
+      <button class="btn ghost small" id="timer-set">Set</button>
+    </div>
+    <label>Linked task
+      <select id="timer-task"></select>
+    </label>
+    <div class="btn-row">
+      <button class="btn good" id="timer-start">▶ Start</button>
+      <button class="btn warn" id="timer-pause">⏸ Pause</button>
+      <button class="btn ghost" id="timer-reset">↺ Reset</button>
+    </div>
+  </section>
+
+  <!-- Announcements -->
+  <section class="card span-2" id="announce-card">
+    <h2>Big Boss Announcements</h2>
+    <form id="announce-form" class="announce-form">
+      <input id="announce-input" placeholder="Attention housemates..." required maxlength="200">
+      <button class="btn" type="submit">📢 Announce</button>
+    </form>
+    <div class="quick">
+      <span class="muted">Quick:</span>
+      <button class="chip">Big Boss is watching. Everyone to the living room.</button>
+      <button class="chip">A new task has been assigned. The clock is ticking.</button>
+      <button class="chip">Nominations are now open.</button>
+      <button class="chip">Tonight, one housemate will leave the Tech House.</button>
+    </div>
+    <ul id="announce-log" class="announce-log"></ul>
+  </section>
+
+  <!-- Performance Analytics -->
+  <section class="card span-3" id="analytics-card">
+    <h2>Performance Analytics</h2>
+    <div id="analytics"></div>
+  </section>
+
+  <!-- Real-Time Activity Log -->
+  <section class="card span-2" id="log-card">
+    <div class="card-head">
+      <h2>Real-Time Activity Log <span class="live" style="display:inline-flex;margin-left:8px"><span class="dot"></span> LIVE</span></h2>
+      <span class="log-tools"><select id="log-filter"></select>
+        <button id="log-export" class="btn ghost small">⬇ CSV</button>
+        <button id="log-clear" class="btn ghost small">Clear</button></span>
+    </div>
+    <ul id="log-list" class="log-list tall"></ul>
+  </section>
+
+  <!-- Role-Based Access -->
+  <section class="card" id="access-card">
+    <h2>Role-Based Access</h2>
+    <p class="muted">Current role: <strong id="role-name"></strong>. Switch roles from the 🔑 menu in the top bar. Blocked actions are denied and logged.</p>
+    <ul id="perm-list" class="perm-list"></ul>
+  </section>
+
+</main>
+
+<div id="notif-panel" class="notif-panel hidden">
+  <div class="card-head"><h2>🔔 Event Notifications</h2><span><button id="notif-read" class="btn ghost small">Mark all read</button> <button id="notif-clear" class="btn ghost small">Clear</button></span></div>
+  <ul id="notif-list" class="log-list"></ul>
+  <h3 class="sub">Notify me about</h3>
+  <div id="nset" class="nset"></div>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<script>
+/* Big Boss Command Center - Tech House
+   Vanilla JS, state persisted in localStorage. */
+(function () {
+  'use strict';
+
+  var STORAGE_KEY = 'bigboss-tech-house-v1';
+  var TEAMS = ['Alpha', 'Beta', 'Gamma', 'Delta'];
+
+  function seedState() {
+    var names = [
+      ['Aarav', 'Alpha'], ['Diya', 'Beta'], ['Rohan', 'Gamma'], ['Meera', 'Delta'],
+      ['Kabir', 'Alpha'], ['Ananya', 'Beta'], ['Vikram', 'Gamma'], ['Isha', 'Delta'],
+      ['Arjun', 'Alpha'], ['Neha', 'Beta']
+    ];
+    return {
+      nextId: 11,
+      contestants: names.map(function (n, i) {
+        return { id: i + 1, name: n[0], team: n[1], points: 100, status: 'active',
+                 captain: false, immune: false, nominated: false };
+      }),
+      tasks: [
+        { id: 1, title: 'Debug the broken login page', assigneeId: 'all', points: 50, done: false },
+        { id: 2, title: 'Pitch an app idea in 60 seconds', assigneeId: 'all', points: 30, done: false }
+      ],
+      nextTaskId: 3,
+      announcements: [],
+      timer: { total: 300, remaining: 300, running: false, endAt: 0 }
+    };
+  }
+
+  var state = load();
+
+  function load() {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) return ensure(JSON.parse(raw));
+    } catch (e) { /* ignore */ }
+    return ensure(seedState());
+  }
+  function ensure(s) {
+    s.role = s.role || 'boss'; s.log = s.log || []; s.notifs = s.notifs || []; s.hist = s.hist || [];
+    s.nset = s.nset || { points: false, house: true, task: true, announce: true, timer: true, security: true };
+    return s;
+  }
+  function save() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) { /* ignore */ }
+  }
+
+  // ---------- helpers ----------
+  function $(id) { return document.getElementById(id); }
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function byId(id) {
+    for (var i = 0; i < state.contestants.length; i++) {
+      if (state.contestants[i].id === Number(id)) return state.contestants[i];
+    }
+    return null;
+  }
+  function active() { return state.contestants.filter(function (c) { return c.status === 'active'; }); }
+  function toast(msg) {
+    var t = $('toast');
+    t.textContent = msg;
+    t.classList.remove('hidden');
+    clearTimeout(toast._t);
+    toast._t = setTimeout(function () { t.classList.add('hidden'); }, 2400);
+  }
+  function setHouseMsg(msg) { $('house-msg').textContent = msg || ''; }
+  function fmtTime(sec) {
+    sec = Math.max(0, Math.ceil(sec));
+    var m = Math.floor(sec / 60), s = sec % 60;
+    return (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+  }
+  function assigneeLabel(a) {
+    if (a === 'all') return 'Whole House';
+    if (String(a).indexOf('team:') === 0) return 'Team ' + String(a).slice(5);
+    var c = byId(a);
+    return c ? c.name : 'Unknown';
+  }
+
+  // ---------- points ----------
+  function addPoints(id, delta) {
+    if (!guard('points','adjust points')) return;
+    var c = byId(id);
+    if (!c || c.status !== 'active') return;
+    c.points += delta;
+    save(); render();
+    toast((delta > 0 ? '+' : '') + delta + ' pts → ' + c.name);
+    logEvent('points', (delta > 0 ? '+' : '') + delta + ' pts → ' + c.name, true);
+  }
+
+  // ---------- captaincy ----------
+  function setCaptain(id) {
+    if (!guard('house','change the captain')) return;
+    var c = byId(id);
+    if (!c) return setHouseMsg('Select a contestant first.');
+    if (c.status !== 'active') return setHouseMsg(c.name + ' is evicted and cannot be Captain.');
+    state.contestants.forEach(function (x) { x.captain = false; });
+    c.captain = true;
+    setHouseMsg('');
+    save(); render();
+    toast('👑 ' + c.name + ' is the new House Captain');
+    logEvent('house', '👑 ' + c.name + ' is the new House Captain', true);
+  }
+  function removeCaptain() {
+    if (!guard('house','change the captain')) return;
+    state.contestants.forEach(function (x) { x.captain = false; });
+    save(); render();
+  }
+
+  // ---------- nominations / immunity ----------
+  function nominate(id) {
+    if (!guard('nominate','nominate')) return;
+    var c = byId(id);
+    if (!c) return setHouseMsg('Select a contestant first.');
+    if (c.status !== 'active') return setHouseMsg(c.name + ' is already evicted.');
+    if (c.immune) return setHouseMsg('🛡 ' + c.name + ' has immunity and cannot be nominated.');
+    if (c.nominated) return setHouseMsg(c.name + ' is already nominated.');
+    c.nominated = true;
+    setHouseMsg('');
+    save(); render();
+    toast('🎯 ' + c.name + ' has been nominated');
+    logEvent('house', '🎯 ' + c.name + ' was nominated', true);
+  }
+  function withdrawNomination(id) {
+    if (!guard('nominate','withdraw nominations')) return;
+    var c = byId(id);
+    if (!c) return;
+    c.nominated = false;
+    save(); render();
+  }
+  function grantImmunity(id) {
+    if (!guard('house','grant immunity')) return;
+    var c = byId(id);
+    if (!c) return setHouseMsg('Select a contestant first.');
+    if (c.status !== 'active') return setHouseMsg(c.name + ' is evicted.');
+    c.immune = true;
+    c.nominated = false; // immunity protects from nomination
+    setHouseMsg('');
+    save(); render();
+    toast('🛡 ' + c.name + ' is now immune');
+    logEvent('house', '🛡 ' + c.name + ' was granted immunity', true);
+  }
+  function revokeImmunity(id) {
+    if (!guard('house','revoke immunity')) return;
+    var c = byId(id);
+    if (!c) return;
+    c.immune = false;
+    save(); render();
+  }
+
+  // ---------- eviction ----------
+  function evict(id) {
+    if (!guard('evict','evict contestants')) return;
+    var c = byId(id);
+    if (!c || c.status !== 'active') return;
+    if (!confirm('Big Boss, evict ' + c.name + ' from the Tech House?')) return;
+    c.status = 'evicted';
+    c.captain = false; c.nominated = false; c.immune = false;
+    // unassign their tasks to the whole house
+    state.tasks.forEach(function (t) { if (t.assigneeId === c.id) t.assigneeId = 'all'; });
+    state.announcements.unshift({ text: c.name + ' has been evicted from the Tech House.', at: Date.now() });
+    save(); render();
+    showBanner(c.name + ' has been evicted from the Tech House.');
+    logEvent('house', '🚪 ' + c.name + ' was evicted', true);
+  }
+
+  // ---------- contestants ----------
+  function addContestant(name, team) {
+    if (!guard('addc','add contestants')) return;
+    state.contestants.push({ id: state.nextId++, name: name, team: team, points: 100,
+      status: 'active', captain: false, immune: false, nominated: false });
+    save(); render();
+    toast(name + ' entered the house');
+    logEvent('house', name + ' entered the house (Team ' + team + ')', true);
+  }
+
+  // ---------- tasks ----------
+  function addTask(title, assignee, points) {
+    if (!guard('task','create tasks')) return;
+    var a = assignee === 'all' || String(assignee).indexOf('team:') === 0 ? assignee : Number(assignee);
+    state.tasks.unshift({ id: state.nextTaskId++, title: title, assigneeId: a, points: points, done: false });
+    save(); render();
+    logEvent('task', 'New task: ' + title + ' → ' + assigneeLabel(a), true);
+  }
+  function completeTask(id) {
+    if (!guard('complete','complete tasks')) return;
+    var t = state.tasks.filter(function (x) { return x.id === id; })[0];
+    if (!t || t.done) return;
+    t.done = true;
+    var winners = [];
+    if (t.assigneeId === 'all') winners = active();
+    else if (String(t.assigneeId).indexOf('team:') === 0) {
+      winners = active().filter(function (c) { return c.team === String(t.assigneeId).slice(5); });
+    } else {
+      var c = byId(t.assigneeId);
+      if (c && c.status === 'active') winners = [c];
+    }
+    winners.forEach(function (c) { c.points += t.points; });
+    save(); render();
+    toast('✔ Task complete · +' + t.points + ' pts to ' + assigneeLabel(t.assigneeId));
+    logEvent('task', '✔ Task done: ' + t.title + ' (+' + t.points + ' pts to ' + assigneeLabel(t.assigneeId) + ')', true);
+  }
+  function reopenTask(id) {
+    if (!guard('task','reopen tasks')) return;
+    var t = state.tasks.filter(function (x) { return x.id === id; })[0];
+    if (t) { t.done = false; save(); render(); }
+  }
+  function deleteTask(id) {
+    if (!guard('task','delete tasks')) return;
+    state.tasks = state.tasks.filter(function (x) { return x.id !== id; });
+    save(); render();
+  }
+
+  // ---------- announcements ----------
+  function announce(text) {
+    if (!guard('announce','make announcements')) return;
+    state.announcements.unshift({ text: text, at: Date.now() });
+    state.announcements = state.announcements.slice(0, 30);
+    save(); render();
+    showBanner(text);
+    logEvent('announce', '📢 ' + text, true);
+  }
+  var bannerTimer;
+  function showBanner(text) {
+    $('announce-text').textContent = text;
+    $('announce-banner').classList.remove('hidden');
+    clearTimeout(bannerTimer);
+    bannerTimer = setTimeout(hideBanner, 9000);
+    try { if (window.speechSynthesis) { var u = new SpeechSynthesisUtterance('Big Boss announcement. ' + text); u.rate = 0.9; u.pitch = 0.6; window.speechSynthesis.cancel(); window.speechSynthesis.speak(u); } } catch (e) { /* ignore */ }
+  }
+  function hideBanner() { $('announce-banner').classList.add('hidden'); }
+
+  // ---------- timer ----------
+  var tick;
+  function timerSet(sec) {
+    if (!guard('timer','control the timer')) return;
+    state.timer.total = sec; state.timer.remaining = sec;
+    state.timer.running = false; state.timer.endAt = 0;
+    save(); renderTimer();
+  }
+  function timerStart() {
+    if (!guard('timer','control the timer')) return;
+    var t = state.timer;
+    if (t.running || t.remaining <= 0) return;
+    t.running = true;
+    t.endAt = Date.now() + t.remaining * 1000;
+    save(); startTick(); renderTimer();
+    logEvent('timer', '⏱ Timer started (' + fmtTime(t.remaining) + ')', true);
+  }
+  function timerPause() {
+    if (!guard('timer','control the timer')) return;
+    var t = state.timer;
+    if (!t.running) return;
+    t.remaining = Math.max(0, (t.endAt - Date.now()) / 1000);
+    t.running = false; t.endAt = 0;
+    save(); renderTimer();
+  }
+  function timerReset() {
+    if (!guard('timer','control the timer')) return;
+    var t = state.timer;
+    t.remaining = t.total; t.running = false; t.endAt = 0;
+    save(); renderTimer();
+  }
+  function startTick() {
+    clearInterval(tick);
+    tick = setInterval(function () {
+      var t = state.timer;
+      if (t.running) {
+        t.remaining = Math.max(0, (t.endAt - Date.now()) / 1000);
+        if (t.remaining <= 0) {
+          t.running = false; t.endAt = 0; t.remaining = 0; save();
+          var sel = $('timer-task').value;
+          var label = sel ? (state.tasks.filter(function (x) { return String(x.id) === sel; })[0] || {}).title : '';
+          showBanner("Time's up!" + (label ? ' Task: ' + label : ''));
+          logEvent('timer', "⏰ Time's up!" + (label ? ' Task: ' + label : ''), true);
+        }
+      }
+      renderTimer();
+    }, 250);
+  }
+  function renderTimer() {
+    var t = state.timer;
+    var rem = t.running ? Math.max(0, (t.endAt - Date.now()) / 1000) : t.remaining;
+    var d = $('timer-display');
+    d.textContent = fmtTime(rem);
+    d.classList.toggle('low', rem > 0 && rem <= 10);
+    d.classList.toggle('zero', rem <= 0);
+    $('timer-fill').style.width = (t.total ? (rem / t.total) * 100 : 0) + '%';
+    $('timer-start').disabled = t.running || rem <= 0;
+    $('timer-pause').disabled = !t.running;
+  }
+
+  // ---------- statistics ----------
+  function renderStats() {
+    var act = active();
+    var top = act.slice().sort(function (a, b) { return b.points - a.points; })[0];
+    var low = act.slice().sort(function (a, b) { return a.points - b.points; })[0];
+    var cap = state.contestants.filter(function (c) { return c.captain; })[0];
+    var done = state.tasks.filter(function (t) { return t.done; }).length;
+    var nominees = act.filter(function (c) { return c.nominated; });
+    var immune = act.filter(function (c) { return c.immune; });
+    var evicted = state.contestants.length - act.length;
+    var total = act.reduce(function (s, c) { return s + c.points; }, 0);
+    var teamPts = {};
+    act.forEach(function (c) { teamPts[c.team] = (teamPts[c.team] || 0) + c.points; });
+    var bestTeam = Object.keys(teamPts).sort(function (a, b) { return teamPts[b] - teamPts[a]; })[0];
+
+    function stat(k, v) { return '<div class="stat"><div class="k">' + k + '</div><div class="v">' + v + '</div></div>'; }
+    $('stats').innerHTML =
+      stat('Highest scorer', top ? esc(top.name) + ' <small>' + top.points + ' pts</small>' : '—') +
+      stat('Lowest scorer', low ? esc(low.name) + ' <small>' + low.points + ' pts</small>' : '—') +
+      stat('Leading team', bestTeam ? bestTeam + ' <small>' + teamPts[bestTeam] + ' pts</small>' : '—') +
+      stat('House Captain', cap ? esc(cap.name) : 'None') +
+      stat('Tasks completed', done + ' <small>/ ' + state.tasks.length + '</small>') +
+      stat('Nominees', nominees.length) +
+      stat('Immune', immune.length) +
+      stat('Active / Evicted', act.length + ' <small>/ ' + evicted + '</small>') +
+      stat('Total house points', total);
+  }
+
+  // ---------- 1. Role-Based Access ----------
+  var ROLES = {
+    boss: { label: 'Big Boss', p: ['points','house','nominate','evict','addc','task','complete','announce','timer','reset'] },
+    captain: { label: 'Captain', p: ['points','nominate','task','complete','announce','timer'] },
+    housemate: { label: 'Housemate', p: ['complete'] },
+    viewer: { label: 'Viewer', p: [] }
+  };
+  var PERMS = { points: 'Adjust points', house: 'Captaincy & immunity', nominate: 'Nominate / save', evict: 'Evict contestants',
+    addc: 'Add contestants', task: 'Create / delete tasks', complete: 'Complete tasks', announce: 'Make announcements',
+    timer: 'Control timer', reset: 'Reset house / clear log' };
+  var TYPES = { points: 'Points', house: 'House', task: 'Tasks', announce: 'Announcements', timer: 'Timer', security: 'Security' };
+  function can(p) { return (ROLES[state.role] || ROLES.viewer).p.indexOf(p) > -1; }
+  function guard(p, what) {
+    if (can(p)) return true;
+    logEvent('security', '🔒 Access denied: ' + ROLES[state.role].label + ' cannot ' + what, true);
+    return false;
+  }
+
+  // ---------- 2 + 3. Event Notifications & Real-Time Activity Log ----------
+  function total() { return active().reduce(function (s, c) { return s + c.points; }, 0); }
+  function logEvent(type, msg, notify) {
+    var now = Date.now();
+    state.log.unshift({ t: now, type: type, msg: msg, role: state.role });
+    state.log = state.log.slice(0, 200);
+    state.hist.push({ t: now, v: total() }); state.hist = state.hist.slice(-60);
+    if (notify && state.nset[type]) {
+      state.notifs.unshift({ t: now, type: type, msg: msg, read: false });
+      state.notifs = state.notifs.slice(0, 40);
+      if (type === 'security') toast(msg);
+    }
+    save(); renderExtras();
+  }
+  function ago(t) {
+    var s = Math.round((Date.now() - t) / 1000);
+    return s < 5 ? 'just now' : s < 60 ? s + 's ago' : s < 3600 ? Math.floor(s / 60) + 'm ago' : new Date(t).toLocaleTimeString();
+  }
+  function renderLog() {
+    var f = $('log-filter').value;
+    var rows = state.log.filter(function (e) { return !f || e.type === f; }).slice(0, 60);
+    $('log-list').innerHTML = rows.length ? rows.map(function (e) {
+      return '<li class="lg lg-' + e.type + '"><span class="lg-type">' + TYPES[e.type] + '</span><span class="lg-msg">' + esc(e.msg) +
+        '</span><time>' + ROLES[e.role || 'boss'].label + ' · ' + ago(e.t) + '</time></li>';
+    }).join('') : '<li class="muted">No activity yet. Actions will appear here live.</li>';
+  }
+  function renderNotifs() {
+    var un = state.notifs.filter(function (n) { return !n.read; }).length;
+    $('bell-badge').textContent = un; $('bell-badge').classList.toggle('hidden', !un);
+    $('notif-list').innerHTML = state.notifs.length ? state.notifs.slice(0, 25).map(function (n) {
+      return '<li class="lg lg-' + n.type + (n.read ? '' : ' unread') + '"><span class="lg-msg">' + esc(n.msg) + '</span><time>' + ago(n.t) + '</time></li>';
+    }).join('') : '<li class="muted">No notifications yet.</li>';
+    $('nset').innerHTML = Object.keys(TYPES).map(function (k) {
+      return '<label class="chk"><input type="checkbox" data-nset="' + k + '"' + (state.nset[k] ? ' checked' : '') + '>' + TYPES[k] + '</label>';
+    }).join('');
+  }
+  function renderAccess() {
+    $('role-select').value = state.role;
+    document.body.setAttribute('data-role', state.role);
+    $('role-name').textContent = ROLES[state.role].label;
+    $('perm-list').innerHTML = Object.keys(PERMS).map(function (k) {
+      return '<li class="' + (can(k) ? 'ok' : 'no') + '">' + (can(k) ? '✔' : '✖') + ' ' + PERMS[k] + '</li>';
+    }).join('');
+  }
+
+  // ---------- 4. Performance Analytics ----------
+  function renderAnalytics() {
+    var act = active(), tot = total(), n = act.length || 1;
+    var done = state.tasks.filter(function (t) { return t.done; }).length;
+    var rate = state.tasks.length ? Math.round(done / state.tasks.length * 100) : 0;
+    var sorted = act.slice().sort(function (a, b) { return b.points - a.points; });
+    var max = Math.max.apply(null, act.map(function (c) { return c.points; }).concat([1]));
+    function kpi(k, v) { return '<div class="stat"><div class="k">' + k + '</div><div class="v">' + v + '</div></div>'; }
+    var teams = {}, cnt = {};
+    act.forEach(function (c) { teams[c.team] = (teams[c.team] || 0) + c.points; cnt[c.team] = (cnt[c.team] || 0) + 1; });
+    var tmax = Math.max.apply(null, Object.keys(teams).map(function (k) { return teams[k]; }).concat([1]));
+    var h = state.hist.map(function (x) { return x.v; });
+    var line = '<p class="muted">Not enough activity yet.</p>';
+    if (h.length > 1) {
+      var lo = Math.min.apply(null, h), hi = Math.max.apply(null, h), rg = (hi - lo) || 1;
+      var pts = h.map(function (v, i) { return (i / (h.length - 1) * 300).toFixed(1) + ',' + (70 - (v - lo) / rg * 60).toFixed(1); }).join(' ');
+      line = '<svg viewBox="0 0 300 80" class="spark"><polyline points="' + pts + '" fill="none" stroke="var(--accent2)" stroke-width="2.5" stroke-linejoin="round"/></svg>' +
+        '<div class="muted">House points across the last ' + h.length + ' events: ' + h[0] + ' → ' + h[h.length - 1] + '</div>';
+    }
+    $('analytics').innerHTML =
+      '<div class="stats">' + kpi('Avg points / contestant', Math.round(tot / n)) + kpi('Task completion', rate + '%') +
+      kpi('Top performer', sorted[0] ? esc(sorted[0].name) + ' <small>' + sorted[0].points + '</small>' : '—') +
+      kpi('Events logged', state.log.length) + '</div>' +
+      '<div class="an-grid">' +
+      '<div><h3 class="sub">Points by contestant</h3>' + sorted.map(function (c) {
+        return '<div class="bar-row"><span>' + esc(c.name) + '</span><div class="bar"><i class="team-' + c.team + '" style="width:' + Math.max(2, c.points / max * 100) + '%"></i></div><b>' + c.points + '</b></div>';
+      }).join('') + '</div>' +
+      '<div><h3 class="sub">Team performance</h3>' + Object.keys(teams).map(function (k) {
+        return '<div class="bar-row"><span>' + k + '</span><div class="bar"><i class="team-' + k + '" style="width:' + Math.max(2, teams[k] / tmax * 100) + '%"></i></div><b>' + teams[k] + '</b></div>' +
+          '<div class="muted tavg">avg ' + Math.round(teams[k] / cnt[k]) + ' / member</div>';
+      }).join('') + '</div>' +
+      '<div><h3 class="sub">Tasks</h3><div class="donut" style="--p:' + rate + '"><b>' + rate + '%</b></div></div>' +
+      '<div><h3 class="sub">House points trend</h3>' + line + '</div></div>';
+  }
+  function renderExtras() { renderAccess(); renderLog(); renderNotifs(); renderAnalytics(); }
+
+  // ---------- render ----------
+  function optionList(includeEvicted) {
+    return state.contestants
+      .filter(function (c) { return includeEvicted || c.status === 'active'; })
+      .map(function (c) { return '<option value="' + c.id + '">' + esc(c.name) + ' (' + c.team + ')</option>'; })
+      .join('');
+  }
+
+  function renderLeaderboard() {
+    var list = active().slice().sort(function (a, b) { return b.points - a.points || a.name.localeCompare(b.name); });
+    $('leaderboard').innerHTML = list.map(function (c, i) {
+      return '<li><span class="rank">' + (i + 1) + '</span>' +
+        '<span class="lb-name">' + esc(c.name) + (c.captain ? ' 👑' : '') + (c.immune ? ' 🛡' : '') + (c.nominated ? ' 🎯' : '') +
+        '<div class="lb-team">Team ' + c.team + '</div></span>' +
+        '<span class="lb-pts">' + c.points + '</span></li>';
+    }).join('') || '<li>No active contestants</li>';
+    var ev = state.contestants.filter(function (c) { return c.status === 'evicted'; });
+    $('evicted-list').innerHTML = ev.length
+      ? ev.map(function (c) { return '<li>' + esc(c.name) + ' · ' + c.points + ' pts</li>'; }).join('')
+      : '<li style="text-decoration:none">Nobody evicted yet</li>';
+  }
+
+  function renderContestants() {
+    $('contestant-rows').innerHTML = state.contestants.map(function (c) {
+      var ev = c.status === 'evicted';
+      var tags = (c.captain ? '<span class="tag captain">CAPTAIN</span>' : '') +
+        (c.immune ? '<span class="tag immune">IMMUNE</span>' : '') +
+        (c.nominated ? '<span class="tag nominated">NOMINATED</span>' : '');
+      var pts = ev ? '' :
+        '<div class="pt-btns">' +
+        '<button class="plus" data-act="pts" data-id="' + c.id + '" data-d="10">+10</button>' +
+        '<button class="plus" data-act="pts" data-id="' + c.id + '" data-d="50">+50</button>' +
+        '<button class="plus" data-act="ptsc" data-id="' + c.id + '" data-sign="1">+Custom</button>' +
+        '<button class="minus" data-act="pts" data-id="' + c.id + '" data-d="-10">−10</button>' +
+        '<button class="minus" data-act="pts" data-id="' + c.id + '" data-d="-50">−50</button>' +
+        '<button class="minus" data-act="ptsc" data-id="' + c.id + '" data-sign="-1">−Custom</button></div>';
+      var ctl = ev ? '<span class="muted">Out of the house</span>' :
+        '<div class="ctl-btns">' +
+        '<button data-act="cap" data-id="' + c.id + '">👑</button>' +
+        '<button data-act="nom" data-id="' + c.id + '">🎯</button>' +
+        '<button data-act="imm" data-id="' + c.id + '">🛡</button>' +
+        '<button class="evict" data-act="evict" data-id="' + c.id + '">Evict</button></div>';
+      return '<tr class="' + (ev ? 'is-evicted' : '') + '">' +
+        '<td><div class="name-cell">' + esc(c.name) + tags + '</div></td>' +
+        '<td><span class="team-pill team-' + c.team + '">' + c.team + '</span></td>' +
+        '<td><strong>' + c.points + '</strong></td>' +
+        '<td><span class="tag ' + (ev ? 'evicted' : 'active') + '">' + (ev ? 'EVICTED' : 'ACTIVE') + '</span></td>' +
+        '<td>' + pts + '</td><td>' + ctl + '</td></tr>';
+    }).join('');
+  }
+
+  function renderDanger() {
+    var noms = active().filter(function (c) { return c.nominated; });
+    $('danger-list').innerHTML = noms.length
+      ? noms.map(function (c) {
+          return '<li><span class="danger-name">🎯 ' + esc(c.name) + ' <span class="muted">· Team ' + c.team + ' · ' + c.points + ' pts</span></span>' +
+            '<span><button class="btn small ghost" data-act="unnom" data-id="' + c.id + '">Save</button> ' +
+            '<button class="btn small evict-btn" data-act="evict" data-id="' + c.id + '">Evict</button></span></li>';
+        }).join('')
+      : '<li class="empty">No one is in the Danger Zone</li>';
+  }
+
+  function renderHouse() {
+    var cap = state.contestants.filter(function (c) { return c.captain; })[0];
+    var imm = active().filter(function (c) { return c.immune; });
+    var nom = active().filter(function (c) { return c.nominated; });
+    function names(a) { return a.length ? a.map(function (c) { return esc(c.name); }).join(', ') : '—'; }
+    $('house-status').innerHTML =
+      '<div>👑 Captain: <strong>' + (cap ? esc(cap.name) : 'None') + '</strong></div>' +
+      '<div>🛡 Immune: <strong>' + names(imm) + '</strong></div>' +
+      '<div>🎯 Nominated: <strong>' + names(nom) + '</strong></div>';
+    var sel = $('house-target'), prev = sel.value;
+    sel.innerHTML = optionList(false);
+    if (prev) sel.value = prev;
+  }
+
+  function renderTasks() {
+    var asg = $('task-assignee'), prev = asg.value;
+    asg.innerHTML = '<option value="all">Whole House</option>' +
+      TEAMS.map(function (t) { return '<option value="team:' + t + '">Team ' + t + '</option>'; }).join('') +
+      optionList(false);
+    if (prev) asg.value = prev;
+
+    $('task-list').innerHTML = state.tasks.length ? state.tasks.map(function (t) {
+      return '<li class="task ' + (t.done ? 'done' : '') + '">' +
+        '<div class="t-main"><div class="t-title">' + esc(t.title) + '</div>' +
+        '<div class="t-meta">Assigned to <strong>' + esc(assigneeLabel(t.assigneeId)) + '</strong> · Reward ' + t.points + ' pts</div></div>' +
+        (t.done
+          ? '<button class="btn small ghost" data-act="reopen" data-id="' + t.id + '">Reopen</button>'
+          : '<button class="btn small good" data-act="done" data-id="' + t.id + '">✔ Mark complete</button>') +
+        '<button class="t-del" data-act="deltask" data-id="' + t.id + '" title="Delete">✕</button></li>';
+    }).join('') : '<li class="muted">No tasks yet. Assign one above.</li>';
+
+    var ts = $('timer-task'), tprev = ts.value;
+    ts.innerHTML = '<option value="">— none —</option>' + state.tasks.filter(function (t) { return !t.done; })
+      .map(function (t) { return '<option value="' + t.id + '">' + esc(t.title) + '</option>'; }).join('');
+    ts.value = tprev;
+  }
+
+  function renderAnnouncements() {
+    $('announce-log').innerHTML = state.announcements.length
+      ? state.announcements.map(function (a) {
+          return '<li>' + esc(a.text) + '<time>' + new Date(a.at).toLocaleTimeString() + '</time></li>';
+        }).join('')
+      : '<li class="muted">No announcements yet.</li>';
+  }
+
+  function render() {
+    renderStats(); renderLeaderboard(); renderContestants(); renderDanger();
+    renderHouse(); renderTasks(); renderAnnouncements(); renderTimer(); renderExtras();
+  }
+
+  // ---------- events ----------
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-act]');
+    if (!b) return;
+    var act = b.getAttribute('data-act'), id = Number(b.getAttribute('data-id'));
+    var custom = Math.max(1, parseInt($('custom-points').value, 10) || 0);
+    switch (act) {
+      case 'pts': addPoints(id, Number(b.getAttribute('data-d'))); break;
+      case 'ptsc': addPoints(id, custom * Number(b.getAttribute('data-sign'))); break;
+      case 'cap': setCaptain(id); break;
+      case 'nom': nominate(id); break;
+      case 'imm': grantImmunity(id); break;
+      case 'unnom': withdrawNomination(id); break;
+      case 'evict': evict(id); break;
+      case 'done': completeTask(id); break;
+      case 'reopen': reopenTask(id); break;
+      case 'deltask': deleteTask(id); break;
+    }
+  });
+
+  $('add-contestant').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var n = $('new-name').value.trim();
+    if (!n) return;
+    addContestant(n, $('new-team').value);
+    $('new-name').value = '';
+  });
+  $('add-task').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var t = $('task-title').value.trim();
+    if (!t) return;
+    addTask(t, $('task-assignee').value, parseInt($('task-points').value, 10) || 0);
+    $('task-title').value = '';
+  });
+  $('btn-captain').onclick = function () { setCaptain($('house-target').value); };
+  $('btn-nominate').onclick = function () { nominate($('house-target').value); };
+  $('btn-immunity').onclick = function () { grantImmunity($('house-target').value); };
+  $('btn-remove-captain').onclick = removeCaptain;
+  $('btn-remove-nom').onclick = function () { withdrawNomination($('house-target').value); };
+  $('btn-remove-immunity').onclick = function () { revokeImmunity($('house-target').value); };
+  $('clear-noms').onclick = function () {
+    if (!guard('nominate','clear nominations')) return;
+    state.contestants.forEach(function (c) { c.nominated = false; });
+    save(); render();
+  };
+
+  $('announce-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var t = $('announce-input').value.trim();
+    if (!t) return;
+    announce(t);
+    $('announce-input').value = '';
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('.chip'), function (c) {
+    c.addEventListener('click', function () { announce(c.textContent); });
+  });
+  $('announce-dismiss').onclick = hideBanner;
+
+  $('timer-set').onclick = function () {
+    var m = Math.max(0, parseInt($('timer-min').value, 10) || 0);
+    var s = Math.max(0, Math.min(59, parseInt($('timer-sec').value, 10) || 0));
+    timerSet(m * 60 + s || 1);
+  };
+  $('timer-start').onclick = timerStart;
+  $('timer-pause').onclick = timerPause;
+  $('timer-reset').onclick = timerReset;
+
+  $('reset-house').onclick = function () {
+    if (!guard('reset','reset the house')) return;
+    if (!confirm('Reset the entire House to its starting state?')) return;
+    state = ensure(seedState()); logEvent('security', '♻ House reset to starting state', true); render(); startTick();
+  };
+
+  // ---------- new feature events ----------
+  $('role-select').addEventListener('change', function () {
+    state.role = $('role-select').value;
+    logEvent('security', '🔑 Role switched to ' + ROLES[state.role].label, true);
+  });
+  $('bell').onclick = function () { $('notif-panel').classList.toggle('hidden'); };
+  $('notif-read').onclick = function () { state.notifs.forEach(function (n) { n.read = true; }); save(); renderNotifs(); };
+  $('notif-clear').onclick = function () { state.notifs = []; save(); renderNotifs(); };
+  document.addEventListener('change', function (e) {
+    var k = e.target.getAttribute && e.target.getAttribute('data-nset');
+    if (k) { state.nset[k] = e.target.checked; save(); }
+  });
+  $('log-filter').addEventListener('change', renderLog);
+  $('log-clear').onclick = function () {
+    if (!guard('reset', 'clear the activity log')) return;
+    state.log = []; state.hist = []; save(); renderExtras();
+  };
+  $('log-export').onclick = function () {
+    var rows = [['time', 'type', 'role', 'message']].concat(state.log.map(function (e) { return [new Date(e.t).toISOString(), e.type, e.role, e.msg]; }));
+    var csv = rows.map(function (r) { return r.map(function (x) { return '"' + String(x).replace(/"/g, '""') + '"'; }).join(','); }).join('\n');
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); a.download = 'activity-log.csv'; a.click();
+  };
+  setInterval(function () { renderLog(); renderNotifs(); }, 5000);
+
+  // sync across tabs
+  window.addEventListener('storage', function (e) {
+    if (e.key === STORAGE_KEY) { state = load(); render(); }
+  });
+
+  // init
+  $('log-filter').innerHTML = '<option value="">All activity</option>' + Object.keys(TYPES).map(function (k) { return '<option value="' + k + '">' + TYPES[k] + '</option>'; }).join('');
+  $('role-select').innerHTML = Object.keys(ROLES).map(function (k) { return '<option value="' + k + '">' + ROLES[k].label + '</option>'; }).join('');
+  $('new-team').innerHTML = TEAMS.map(function (t) { return '<option>' + t + '</option>'; }).join('');
+  render();
+  if (state.timer.running) startTick(); else startTick();
+})();
+
+</script>
+<script>
+/* Background themes */
+(function () {
+  'use strict';
+  var KEY = 'bigboss-bg';
+  var CYCLE = ['aurora', 'grid', 'stars', 'matrix', 'sunset'];
+  var sel = document.getElementById('bg-theme');
+  var cv = document.getElementById('bg-canvas');
+  var ctx = cv.getContext('2d');
+  var W = 0, H = 0, mode = null, raf = 0, last = 0, autoTimer = 0, cycleIdx = 0;
+  var stars = [], dots = [], drops = [];
+  var FS = 16, CHARS = '01{}<>/=;+*#ABCDEF0123456789';
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function rnd(a, b) { return a + Math.random() * (b - a); }
+
+  function init() {
+    var i, n;
+    stars = []; n = Math.min(260, Math.round(W * H / 6500));
+    for (i = 0; i < n; i++) stars.push({ x: rnd(-W, W), y: rnd(-H, H), z: rnd(1, W) });
+    dots = []; n = Math.min(70, Math.round(W * H / 22000));
+    for (i = 0; i < n; i++) dots.push({ x: rnd(0, W), y: rnd(0, H), vx: rnd(-.25, .25), vy: rnd(-.25, .25), r: rnd(1, 2.4) });
+    drops = []; n = Math.ceil(W / FS);
+    for (i = 0; i < n; i++) drops.push(rnd(-60, 0));
+  }
+
+  function resize() {
+    var d = Math.min(window.devicePixelRatio || 1, 1.5);
+    W = window.innerWidth; H = window.innerHeight;
+    cv.width = W * d; cv.height = H * d;
+    ctx.setTransform(d, 0, 0, d, 0, 0);
+    init();
+    clearFor(mode);
+  }
+
+  function clearFor(m) {
+    if (m === 'stars' || m === 'matrix') { ctx.fillStyle = '#0b0d14'; ctx.fillRect(0, 0, W, H); }
+    else ctx.clearRect(0, 0, W, H);
+  }
+
+  function drawStars() {
+    ctx.fillStyle = 'rgba(11,13,20,.38)';
+    ctx.fillRect(0, 0, W, H);
+    var speed = reduce ? 0 : W / 220, cx = W / 2, cy = H / 2;
+    for (var i = 0; i < stars.length; i++) {
+      var s = stars[i];
+      var px = cx + s.x / (s.z + speed * 2) * cx, py = cy + s.y / (s.z + speed * 2) * cy;
+      s.z -= speed;
+      if (s.z < 1) { s.x = rnd(-W, W); s.y = rnd(-H, H); s.z = W; continue; }
+      var sx = cx + s.x / s.z * cx, sy = cy + s.y / s.z * cy;
+      var a = 1 - s.z / W;
+      ctx.strokeStyle = (i % 5 === 0 ? 'rgba(0,212,255,' : 'rgba(255,255,255,') + (0.25 + a * .75).toFixed(2) + ')';
+      ctx.lineWidth = 0.4 + a * 2;
+      ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(sx, sy); ctx.stroke();
+    }
+  }
+
+  function drawMatrix(t) {
+    if (t - last < 55) return;
+    last = t;
+    ctx.fillStyle = 'rgba(11,13,20,.14)';
+    ctx.fillRect(0, 0, W, H);
+    ctx.font = FS + 'px monospace';
+    for (var i = 0; i < drops.length; i++) {
+      var ch = CHARS.charAt(Math.floor(Math.random() * CHARS.length));
+      var x = i * FS, y = drops[i] * FS;
+      ctx.fillStyle = i % 2 ? '#7c5cff' : '#00d4ff';
+      ctx.fillText(ch, x, y - FS);
+      ctx.fillStyle = '#e8ebf5';
+      ctx.fillText(ch, x, y);
+      if (y > H && Math.random() > 0.975) drops[i] = 0;
+      drops[i] += 1;
+    }
+  }
+
+  function drawParticles() {
+    ctx.clearRect(0, 0, W, H);
+    var i, j, a, b, dx, dy, d;
+    for (i = 0; i < dots.length; i++) {
+      a = dots[i];
+      if (!reduce) {
+        a.x += a.vx; a.y += a.vy;
+        if (a.x < 0 || a.x > W) a.vx *= -1;
+        if (a.y < 0 || a.y > H) a.vy *= -1;
+      }
+      ctx.fillStyle = 'rgba(160,190,255,.8)';
+      ctx.beginPath(); ctx.arc(a.x, a.y, a.r, 0, 6.2832); ctx.fill();
+      for (j = i + 1; j < dots.length; j++) {
+        b = dots[j]; dx = a.x - b.x; dy = a.y - b.y; d = Math.sqrt(dx * dx + dy * dy);
+        if (d < 130) {
+          ctx.strokeStyle = 'rgba(124,92,255,' + (0.35 * (1 - d / 130)).toFixed(3) + ')';
+          ctx.lineWidth = 1;
+          ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+        }
+      }
+    }
+  }
+
+  function frame(t) {
+    raf = requestAnimationFrame(frame);
+    if (document.hidden) return;
+    if (mode === 'stars') drawStars();
+    else if (mode === 'matrix') drawMatrix(t);
+    else if (mode === 'particles') drawParticles();
+  }
+
+  function start() {
+    cancelAnimationFrame(raf);
+    if (!mode) { ctx.clearRect(0, 0, W, H); return; }
+    if (reduce) {
+      for (var k = 0; k < 40; k++) frame(k * 60);
+      cancelAnimationFrame(raf);
+      return;
+    }
+    raf = requestAnimationFrame(frame);
+  }
+
+  function apply(theme) {
+    document.body.setAttribute('data-bg', theme);
+    mode = theme === 'stars' ? 'stars' : theme === 'matrix' ? 'matrix' : theme === 'aurora' ? 'particles' : null;
+    clearFor(mode);
+    start();
+  }
+
+  function choose(value) {
+    clearInterval(autoTimer);
+    try { localStorage.setItem(KEY, value); } catch (e) { /* ignore */ }
+    if (value === 'auto') {
+      apply(CYCLE[cycleIdx % CYCLE.length]);
+      autoTimer = setInterval(function () { cycleIdx++; apply(CYCLE[cycleIdx % CYCLE.length]); }, 25000);
+    } else {
+      apply(value);
+    }
+  }
+
+  sel.addEventListener('change', function () { choose(sel.value); });
+  window.addEventListener('resize', resize);
+
+  var saved = 'aurora';
+  try { saved = localStorage.getItem(KEY) || 'aurora'; } catch (e) { /* ignore */ }
+  if (!Array.prototype.some.call(sel.options, function (o) { return o.value === saved; })) saved = 'aurora';
+  sel.value = saved;
+  resize();
+  choose(saved);
+})();
+</script>
+</body>
+</html>
